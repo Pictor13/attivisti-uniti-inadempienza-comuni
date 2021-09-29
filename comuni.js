@@ -1,12 +1,14 @@
 const axios = require('axios');
 const cheerio = require('cheerio');
+const { provinceByRegione } = require('./database.js')
 
-const findComuneFor = async idRegione => {
-    const url = `http://italia.indettaglio.it/ita/email/selettore_email.html?id_regione=${idRegione}`
+
+const findComuniEntriesFor = async (idRegione, idProvincia) => {
+    const url = `http://italia.indettaglio.it/ita/email/selettore_email.html?id_regione=${idRegione}&id_provincia=${idProvincia}`
     const { data } = await axios.get(url)
         .catch(err => console.log('Impossibile collegarsi a ', url))
     if (data) {
-        return getIdComuniFor(data)
+        return [ idProvincia, getIdComuniFor(data) ]
     } else {
         console.error('nada')
     }
@@ -18,11 +20,17 @@ const getIdComuniFor = html => {
     return idComuni.filter(prov => prov && prov.length > 0)
 }
 
-const findComuni = async idRegioni =>
-    Promise.all(idRegioni.map(id => findComuneFor(id)))
+const findComuniRegione = async (idRegione) => {
+    return await Promise.all(
+        provinceByRegione[idRegione].map(
+            idProvincia =>
+                findComuniEntriesFor(idRegione, idProvincia)
+    ))
+}
+
 
 module.exports = {
-    findComuneFor,
-    getIdComuniFor,
-    findComuni
+    findComuniEntriesFor,
+    // getIdComuniFor,
+    findComuniRegione
 }

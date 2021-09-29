@@ -1,37 +1,83 @@
 const axios = require('axios');
 const cheerio = require('cheerio');
-const { findProvince } = require('./provincie.js')
+const { findComuniRegione, findComuniEntriesFor } = require('./comuni.js');
+// const { findProvince } = require('./provincieRegione.js')
+const { idRegioni } = require('./database.js');
+const { findInfoForComuni, getEmailsFrom } = require('./info.js');
 
-const idRegioni = [ '13','17','18','15','08','06','12','07','03','11','14','01','16','20','19','09','04','10','02','05' ]
-const idProvince = [
-    '069', '066', '068', '067', '077', '076',
-    '079', '078', '101', '080', '102', '064',
-    '062', '061', '063', '065', '060', '059',
-    '057', '058', '056', '042', '044', '109',
-    '043', '041', '070', '094', '072', '110',
-    '074', '071', '075', '073', '092', '091',
-    '095', '090', '111', '084', '085', '087',
-    '086', '083', '082', '088', '089', '081',
-    '054', '055'
-]
+// findProvince(idRegioni)
+//     .then(idProvince => {
+//         console.log(idProvince)
+//         return idProvince
+//     })
 
+idRegioni.forEach(idRegione => {
+    findComuniRegione(idRegione).then(comuniByProvincia => {
+        let infoComuni = []
+        if (comuniByProvincia) {
+            comuniByProvincia = comuniByProvincia.filter(comuni => comuni.length > 0)
 
-findProvince(idRegioni)
-    .then(idProvince => {
-        // provinciePerRegione = {
-        //     ...idProvince
-        // }
-        // idProvince = idProvince.filter(regione => regione.length > 0).flat()
-        console.log(idProvince)
-        return idProvince
+            for (let i=0; i < comuniByProvincia.length; i++) {
+                console.log('Go through comuniByProvincia');
+                let [idProvincia, idComuni] = comuniByProvincia[i]
+                
+                let infoComuniGenerator = findInfoForComuni(idComuni, idProvincia, idRegione)
+                for (let info = infoComuniGenerator.next().value; info <= 5; i = infoComuniGenerator.next(info).value) {
+                    console.log('Got info', info)
+                    infoComuni.push(info)
+                }
+            }
+            // infoComuni = comuniByProvincia.map(([idProvincia, idComuni]) =>
+            //     await findInfoForComuni(idComuni, idProvincia, idRegione)
+            // )
+        }
+        console.log('TROVATI:', infoComuni)
+        return infoComuni
     })
 
-// findComuni(idProvince)
-//     .then(idComuni => {
-//         idComuni = idComuni.filter(comuni => comuni.length > 0).flat()
-//         console.log(idComuni)
-//         return idComuni
-//     })
+    // const comuniPerProvincia = provincieRegione.map(idProvincia =>
+    //     findComuniEntriesFor(idRegione, idProvincia)
+    //         .then(idComuni => {
+    //             idComuni = idComuni.filter(comuni => comuni.length > 0).flat()
+    //             console.log(idComuni)
+    //             return idComuni
+    //         })
+    // )
+})
+
+
+const getEmailFor = async comune => {
+    const {idComune, idProvincia, idRegione} = comune
+    const threeDigitsProvincia = `000${idProvincia}`.slice(-3)
+    const sixDigitsComune =  threeDigitsProvincia + `000${idComune}`.slice(-3)
+    const inDettaglioUrl = `http://italia.indettaglio.it/ita/email/email_out.html`
+    const requestData = {
+        id_regione: idRegione,
+        id_provincia: threeDigitsProvincia,
+        id_comune: sixDigitsComune
+    }
+
+    // try to see if there's a matching Comune
+    console.info(`Fetch from: ${inDettaglioUrl}`, requestData)
+    const { data } = await axios.post(inDettaglioUrl, requestData)
+        .catch(err => console.error(`Impossibile contattare l'URL`, err))
+
+    if (data) {
+        let emails = await getEmailsFrom(data)
+        // build info object to return
+        const info = {
+            id_comune: idComune,
+            info: emails
+        }
+        return info
+        console.debug(info)
+        // add info to array of infos
+        infos.push(info)
+    } else {
+        console.warn('HTML response is empty')
+    }
+
+}
 
 return
 
@@ -62,64 +108,42 @@ return
 // )
 
 
-const getEmailsFrom = async (htmlData, idComune) => {
-    console.log('parse', idComune)
-    // parse HTTP-response content
-    const $ = cheerio.load(htmlData)
-    const $infoColumns = $('.tb_resp table tr:not(.info) td')
-    const infoLine = $infoColumns.toArray().map(
-        column => {
-            const child = column.children.pop()
-            return child.children
-                ? child.children.pop().data
-                : child.data
-        }
-    )
-    // split in chunks (1 chunk = 1 table row)
-    const chunks = []
-    const columnsPerRow = 4
-    while (infoLine.length >= columnsPerRow) {
-        chunks.push(infoLine.splice(0, columnsPerRow))
-    }
-    return chunks
-}
+// const generateIds = async () => {
+//     const infos = []
+//     for (let idProvincia = 8; idProvincia < 1000; idProvincia++) {
+//         for (let idComune = 2; idComune < 1000; idComune++) {
+//             let threeDigitsProvincia = `000${idProvincia}`.slice(-3)
+//             let sixDigitsComune =  threeDigitsProvincia + `000${idComune}`.slice(-3)
+//             // let inDettaglioUrl = `http://italia.indettaglio.it/ita/email/selettore_email.html?id_provincia=${threeDigitsProvincia}&id_comune=${sixDigitsComune}`
+//             let inDettaglioUrl = `http://italia.indettaglio.it/ita/email/email_out.html`
+//             let requestData = {
+//                 id_provincia: threeDigitsProvincia,
+//                 id_comune: sixDigitsComune
+//             }
 
-const generateIds = async () => {
-    const infos = []
-    for (let idProvincia = 8; idProvincia < 1000; idProvincia++) {
-        for (let idComune = 2; idComune < 1000; idComune++) {
-            let threeDigitsProvincia = `000${idProvincia}`.slice(-3)
-            let sixDigitsComune =  threeDigitsProvincia + `000${idComune}`.slice(-3)
-            // let inDettaglioUrl = `http://italia.indettaglio.it/ita/email/selettore_email.html?id_provincia=${threeDigitsProvincia}&id_comune=${sixDigitsComune}`
-            let inDettaglioUrl = `http://italia.indettaglio.it/ita/email/email_out.html`
-            let requestData = {
-                id_provincia: threeDigitsProvincia,
-                id_comune: sixDigitsComune
-            }
+//             // try to see if there's a matching Comune
+//             console.info(`Fetch from: ${inDettaglioUrl}`, requestData)
+//             const { data: data } = await axios.post(inDettaglioUrl, requestData)
+//                 .catch(err => console.error(`Impossibile contattare l'URL`, err))
 
-            // try to see if there's a matching Comune
-            console.info(`Fetch from: ${inDettaglioUrl}`, requestData)
-            const { data: htmlResponse } = await axios.post(inDettaglioUrl, requestData)
-                .catch(err => console.error(`Impossibile contattare l'URL`, err))
+//             if (data) {
+//                 let emails = await getEmailsFrom(data)
+//                 // build info object to return
+//                 const info = {
+//                     id_comune: idComune,
+//                     info: emails
+//                 }
+//                 return info
+//                 console.debug(info)
+//                 // add info to array of infos
+//                 infos.push(info)
+//             } else {
+//                 console.warn('HTML response is empty')
+//             }
+//         }
+//     }
+//     console.log(infos)
+//     // return infos
+// }
 
-            if (htmlResponse) {
-                let emails = await getEmailsFrom(htmlResponse)
-                // build info object to return
-                const info = {
-                    id_comune: idComune,
-                    info: emails
-                }
-                return info
-                console.debug(info)
-                // add info to array of infos
-                infos.push(info)
-            } else {
-                console.warn('HTML response is empty')
-            }
-        }
-    }
-    console.log(infos)
-    // return infos
-}
-
-console.log(generateIds())
+// console.log(generateIds())
