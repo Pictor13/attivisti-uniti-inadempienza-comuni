@@ -2,15 +2,36 @@ const axios = require('axios');
 const cheerio = require('cheerio');
 const { findProvince } = require('./provincie.js')
 
-const idRegioni = [ 13,17,18,15,08,06,12,07,03,11,14,01,16,20,19,09,04,10,02,05 ]
+const idRegioni = [ '13','17','18','15','08','06','12','07','03','11','14','01','16','20','19','09','04','10','02','05' ]
+const idProvince = [
+    '069', '066', '068', '067', '077', '076',
+    '079', '078', '101', '080', '102', '064',
+    '062', '061', '063', '065', '060', '059',
+    '057', '058', '056', '042', '044', '109',
+    '043', '041', '070', '094', '072', '110',
+    '074', '071', '075', '073', '092', '091',
+    '095', '090', '111', '084', '085', '087',
+    '086', '083', '082', '088', '089', '081',
+    '054', '055'
+]
+
 
 findProvince(idRegioni)
     .then(idProvince => {
-        idProvince = idProvince.filter(province => province.length > 0).flat()
+        // provinciePerRegione = {
+        //     ...idProvince
+        // }
+        // idProvince = idProvince.filter(regione => regione.length > 0).flat()
         console.log(idProvince)
         return idProvince
     })
 
+// findComuni(idProvince)
+//     .then(idComuni => {
+//         idComuni = idComuni.filter(comuni => comuni.length > 0).flat()
+//         console.log(idComuni)
+//         return idComuni
+//     })
 
 return
 

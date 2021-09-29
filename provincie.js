@@ -1,12 +1,18 @@
 const axios = require('axios');
 const cheerio = require('cheerio');
 
+/**
+ * @typedef {Object} ProvincieRegioni
+ *
+ * @param {String} idRegione
+ * @returns {Object} ProvincieRegioni
+ */
 const findProvinciaFor = async idRegione => {
     const url = `http://italia.indettaglio.it/ita/email/selettore_email.html?id_regione=${idRegione}`
     const { data } = await axios.get(url)
         .catch(err => console.log('Impossibile collegarsi a ', url))
     if (data) {
-        return getIdProvinceFor(data)
+        return [ idRegione, getIdProvinceFor(data) ]
     } else {
         console.error('nada')
     }
@@ -19,10 +25,13 @@ const getIdProvinceFor = html => {
 }
 
 const findProvince = async idRegioni =>
-    Promise.all(idRegioni.map(id => findProvinciaFor(id)))
+    Object.fromEntries(await Promise.all(
+        idRegioni.map(id => findProvinciaFor(id)
+    )))
+
 
 module.exports = {
-    findProvinciaFor,
-    getIdProvinceFor,
+    // findProvinciaFor,
+    // getIdProvinceFor,
     findProvince
 }
