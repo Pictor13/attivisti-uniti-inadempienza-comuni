@@ -1,9 +1,7 @@
 const axios = require("axios")
 const cheerio = require("cheerio")
 const qs = require("qs")
-function sleep(ms) {
-    return new Promise((resolve) => setTimeout(resolve, ms))
-}
+const { sleep, removeNewlines } = require("./utils")
 
 class Comune {
     constructor(idComune, idProvincia, idRegione) {
@@ -19,8 +17,15 @@ class Comune {
 // }
 
 
-const findInfoForComuni = async function *(comuniProvincia, idProvincia, idRegione) {
-    console.log('findInfoForComuni');
+/**
+ * @generator
+ * @param {Array} comuniProvincia
+ * @param {String} idProvincia
+ * @param {String} idRegione
+ * @yields {Promise} ComuneInfo
+ */
+const findInfoForComuni = async function* (comuniProvincia, idProvincia, idRegione) {
+    // console.log('findInfoForComuni');
 
     for(let i=0; i < comuniProvincia.length; i++) {
         let comune = new Comune(comuniProvincia[i], idProvincia, idRegione)
@@ -42,50 +47,43 @@ const findInfoForComuni = async function *(comuniProvincia, idProvincia, idRegio
 }
 
 
+/**
+ * Fetch the actual detail page and parse info for Comune
+ * @param {Comune} comune
+ * @typedef {[ Comune, InfoSet ]} ComuneInfo
+ * @returns {null|ComuneInfo}
+ */
 const findComuneInfo = async comune => {
     const url = `http://italia.indettaglio.it/ita/email/email_out.html`
     console.log('Info for:', url, comune);
-    const options = {
-        // headers: {
-        //     // 'application/json' is the modern content-type for JSON, but some
-        //     // older servers may use 'text/json'.
-        //     // See: http://bit.ly/text-json
-        //     'content-type': 'text/json'
-        // }
-    }
-    const response = await axios.post(url, qs.stringify(comune), options)
+    const response = await axios.post(url, qs.stringify(comune))
         .catch(err => console.log('Impossibile collegarsi a ', url))
     if (response && response.data) {
-        const infoChunks = getInfoChunksFrom(response.data)
-        return [ comune, infoChunks ]
-    } else {
-        return null
+        return [ comune, getInfoSetFrom(response.data) ]
     }
+    return null
 }
-const getInfoChunksFrom = html => {
-    console.log('getInfoChunksFrom');
+/**
+ * @typedef {InfoChunk[]} InfoSet
+ * @param {String} html     - Markup to parse
+ * @returns {InfoSet}       - A set of chunks with info
+ */
+const getInfoSetFrom = html => {
     // parse HTTP-response content
     const $ = cheerio.load(html)
-
-    // console.log(html);
-    // return
-
-
     const $infoColumns = $('.tb_resp table tr:not(.info) td')
-    console.log($infoColumns.length);
     const infoLine = $infoColumns.toArray()
-    // split in chunks (1 chunk = 1 table row)
-    const chunks = []
+    // split in set of chunks (1 chunk = 1 table row)
+    const infoSet = []
     const columnsPerRow = 4
     while (infoLine.length >= columnsPerRow) {
-        let infoSet = infoLine.splice(0, columnsPerRow)
-        infoSet = infoSet.map(
-            column => column.data || column.children[0].data
-        )
-        console.log('infoset', infoSet);
-        chunks.push(infoSet)
+        /** @type {String[]} InfoChunk */
+        let chunk = infoLine.splice(0, columnsPerRow)
+        chunk = chunk.map(columnValue).map(removeNewlines)
+        // console.log('chunk', chunk);
+        infoSet.push(chunk)
     }
-    return chunks
+    return infoSet
 }
 
 const getNodeContent = node => {
@@ -97,7 +95,6 @@ const getNodeContent = node => {
 
 
 const getEmailsFrom = async (htmlData, idComune) => {
-    console.log('parse', idComune)
     // parse HTTP-response content
     const $ = cheerio.load(htmlData)
     const $infoColumns = $('.tb_resp table tr:not(.info) td')
