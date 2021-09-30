@@ -1,7 +1,7 @@
 {
   "name": "attivisti-uniti-inadempienza-comuni",
   "version": "0.1.0",
-  "description": "Find info about Italian cities, to match them with lists from attivistiuniti.it",
+  "description": "Fetch info about Italian cities, to match them with lists from attivistiuniti.it",
   "main": "index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
