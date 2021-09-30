@@ -4,6 +4,7 @@
   "description": "Fetch info about Italian cities, to match them with lists from attivistiuniti.it",
   "main": "index.js",
   "scripts": {
+    "fetch-cities-info": "node index.js",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "author": "Pictor13",
