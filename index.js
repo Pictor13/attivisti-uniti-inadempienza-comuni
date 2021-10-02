@@ -3,7 +3,7 @@ const cheerio = require('cheerio');
 const { findComuniRegione, findComuniEntriesFor } = require('./comuni.js');
 // const { findProvince } = require('./provincieRegione.js')
 const { idRegioni } = require('./database.js');
-const { findInfoForComuni, getEmailsFrom } = require('./info.js');
+const { generateInfoForComuni, getEmailsFrom } = require('./info.js');
 
 // findProvince(idRegioni)
 //     .then(idProvince => {
@@ -11,8 +11,8 @@ const { findInfoForComuni, getEmailsFrom } = require('./info.js');
 //         return idProvince
 //     })
 
-idRegioni.forEach(idRegione => {
-    findComuniRegione(idRegione).then(comuniByProvincia => {
+idRegioni.map(idRegione => {
+    findComuniRegione(idRegione).then(async comuniByProvincia => {
         let infoComuni = []
         if (comuniByProvincia) {
             comuniByProvincia = comuniByProvincia.filter(comuni => comuni.length > 0)
@@ -20,19 +20,23 @@ idRegioni.forEach(idRegione => {
             for (let i=0; i < comuniByProvincia.length; i++) {
                 console.log('Go through comuniByProvincia');
                 let [idProvincia, idComuni] = comuniByProvincia[i]
-                
-                let infoComuniGenerator = findInfoForComuni(idComuni, idProvincia, idRegione)
-                for (let info = infoComuniGenerator.next().value; info <= 5; i = infoComuniGenerator.next(info).value) {
-                    console.log('Got info', info)
+
+                // let infoComuniGenerator = generateInfoForComuni(idComuni, idProvincia, idRegione)
+                // console.log('VALUE:', infoComuniGenerator.next().value);
+                // for (let info = infoComuniGenerator.next().value; info <= idComuni.length; info = infoComuniGenerator.next(info).value) {
+                for await (let info of generateInfoForComuni(idComuni, idProvincia, idRegione)) {
+                    // console.dir(info, {depth:null})
+                    console.log('------')
                     infoComuni.push(info)
                 }
             }
             // infoComuni = comuniByProvincia.map(([idProvincia, idComuni]) =>
-            //     await findInfoForComuni(idComuni, idProvincia, idRegione)
+            //     await generateInfoForComuni(idComuni, idProvincia, idRegione)
             // )
         }
-        console.log('TROVATI:', infoComuni)
-        return infoComuni
+        console.log(`EMAILS PER COMUNI IN REGIONE: ${idRegione}`)
+        console.dir(infoComuni, {depth:null})
+        return [idRegione, infoComuni]
     })
 
     // const comuniPerProvincia = provincieRegione.map(idProvincia =>

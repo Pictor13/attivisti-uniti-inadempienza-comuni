@@ -21,6 +21,9 @@ const getIdComuniFor = html => {
 }
 
 const findComuniRegione = async (idRegione) => {
+    if (!provinceByRegione[idRegione])
+        return []
+
     return await Promise.all(
         provinceByRegione[idRegione].map(
             idProvincia =>

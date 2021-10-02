@@ -24,16 +24,14 @@ class Comune {
  * @param {String} idRegione
  * @yields {Promise} ComuneInfo
  */
-const findInfoForComuni = async function* (comuniProvincia, idProvincia, idRegione) {
-    // console.log('findInfoForComuni');
+const generateInfoForComuni = async function* (comuniProvincia, idProvincia, idRegione) {
+    // console.log('generateInfoForComuni');
 
     for(let i=0; i < comuniProvincia.length; i++) {
         let comune = new Comune(comuniProvincia[i], idProvincia, idRegione)
-        console.log('findComuneInfo');
-        const info = await findComuneInfo(comune)
-        console.log('PAUSA', info);
-        await sleep(1000)
-        yield info
+        let info = findComuneInfo(comune)
+        // console.log('YIELD INFO', info)
+        yield info     // <---  *  here?
     }
 
     console.log('---------------------------------------')
@@ -50,8 +48,6 @@ const findInfoForComuni = async function* (comuniProvincia, idProvincia, idRegio
 /**
  * Fetch the actual detail page and parse info for Comune
  * @param {Comune} comune
- * @typedef {[ Comune, InfoSet ]} ComuneInfo
- * @returns {null|ComuneInfo}
  */
 const findComuneInfo = async comune => {
     const url = `http://italia.indettaglio.it/ita/email/email_out.html`
@@ -59,6 +55,8 @@ const findComuneInfo = async comune => {
     const response = await axios.post(url, qs.stringify(comune))
         .catch(err => console.log('Impossibile collegarsi a ', url))
     if (response && response.data) {
+        /** @typedef {[ Comune, InfoSet ]} ComuneInfo */
+        
         return [ comune, getInfoSetFrom(response.data) ]
     }
     return null
@@ -79,7 +77,7 @@ const getInfoSetFrom = html => {
     while (infoLine.length >= columnsPerRow) {
         /** @type {String[]} InfoChunk */
         let chunk = infoLine.splice(0, columnsPerRow)
-        chunk = chunk.map(columnValue).map(removeNewlines)
+        chunk = chunk.map(getNodeContent).map(removeNewlines)
         // console.log('chunk', chunk);
         infoSet.push(chunk)
     }
@@ -87,9 +85,9 @@ const getInfoSetFrom = html => {
 }
 
 const getNodeContent = node => {
-    return (node.children ? getNodeContent(node.children)
+    return (node.children ? getNodeContent(node.children[0])
         : node.data ? node.data
-            : node
+            : getNodeContent(node) || node.data
     )
 }
 
@@ -116,6 +114,6 @@ const getEmailsFrom = async (htmlData, idComune) => {
 }
 
 module.exports = {
-    findInfoForComuni,
+    generateInfoForComuni,
     getEmailsFrom
 }

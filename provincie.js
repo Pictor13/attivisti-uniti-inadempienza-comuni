@@ -2,20 +2,19 @@ const axios = require('axios');
 const cheerio = require('cheerio');
 
 /**
- * @typedef {Object} ProvincieRegioni
- *
  * @param {String} idRegione
- * @returns {Object} ProvincieRegioni
+ * @typedef {[ String, String[] ]} ProvincieRegioni
+ * @returns {ProvincieRegioni | null}
  */
-const findProvinciaFor = async idRegione => {
+const findProvinceFor = async idRegione => {
     const url = `http://italia.indettaglio.it/ita/email/selettore_email.html?id_regione=${idRegione}`
     const { data } = await axios.get(url)
         .catch(err => console.log('Impossibile collegarsi a ', url))
     if (data) {
         return [ idRegione, getIdProvinceFor(data) ]
-    } else {
-        console.error('nada')
     }
+    console.error(`Can't fetch Provincie`)
+    return null
 }
 const getIdProvinceFor = html => {
     const $ = cheerio.load(html)
@@ -26,12 +25,12 @@ const getIdProvinceFor = html => {
 
 const findProvince = async idRegioni =>
     Object.fromEntries(await Promise.all(
-        idRegioni.map(id => findProvinciaFor(id)
+        idRegioni.map(id => findProvinceFor(id)
     )))
 
 
 module.exports = {
-    // findProvinciaFor,
+    // findProvinceFor,
     // getIdProvinceFor,
     findProvince
 }
