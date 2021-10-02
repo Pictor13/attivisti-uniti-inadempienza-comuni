@@ -1,9 +1,9 @@
 const axios = require('axios');
 const cheerio = require('cheerio');
-const { findComuniRegione, findComuniEntriesFor } = require('./comuni.js');
-// const { findProvince } = require('./provincieRegione.js')
-const { idRegioni } = require('./database.js');
-const { generateInfoForComuni, getEmailsFrom } = require('./info.js');
+const { findComuniRegione, findComuniEntriesFor } = require('./lib/comuni.js');
+// const { findProvince } = require('./lib/provincieRegione.js')
+const { idRegioni } = require('./lib/database.js');
+const { generateInfoForComuni, getEmailsFrom } = require('./lib/info.js');
 
 // findProvince(idRegioni)
 //     .then(idProvince => {
