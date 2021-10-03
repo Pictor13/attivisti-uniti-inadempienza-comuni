@@ -12,27 +12,24 @@ const { generateInfoForComuni, getEmailsFrom } = require('./lib/info.js');
 //     })
 
 idRegioni.map(idRegione => {
-    findComuniRegione(idRegione).then(async comuniByProvincia => {
+    findComuniRegione(idRegione)
+    .then(async comuniByProvincia => {
         let infoComuni = []
         if (comuniByProvincia) {
             comuniByProvincia = comuniByProvincia.filter(comuni => comuni.length > 0)
 
             for (let i=0; i < comuniByProvincia.length; i++) {
-                console.log('Go through comuniByProvincia');
+                // console.log(`Go through comuni-per-Provincia-${comuniByProvincia[i]}`)
                 let [idProvincia, idComuni] = comuniByProvincia[i]
 
                 // let infoComuniGenerator = generateInfoForComuni(idComuni, idProvincia, idRegione)
                 // console.log('VALUE:', infoComuniGenerator.next().value);
                 // for (let info = infoComuniGenerator.next().value; info <= idComuni.length; info = infoComuniGenerator.next(info).value) {
                 for await (let info of generateInfoForComuni(idComuni, idProvincia, idRegione)) {
-                    // console.dir(info, {depth:null})
-                    console.log('------')
+                    // console.dir(info, {depth:null}); console.log('------')
                     infoComuni.push(info)
                 }
             }
-            // infoComuni = comuniByProvincia.map(([idProvincia, idComuni]) =>
-            //     await generateInfoForComuni(idComuni, idProvincia, idRegione)
-            // )
         }
         console.log(`EMAILS PER COMUNI IN REGIONE: ${idRegione}`)
         console.dir(infoComuni, {depth:null})
